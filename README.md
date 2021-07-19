@@ -5,6 +5,17 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/pterodactyl/panel/latest/total?style=for-the-badge)
 ![GitHub contributors](https://img.shields.io/github/contributors/pterodactyl/panel?style=for-the-badge)
 
+# Modified By Marije
+This is a modified install of pterodactyl. This is an install i use personally but i dont mind it being open source so therefore it is publically avalible. Currently only mild visual changes are being made so i dont have to apply them every time i update my server using this package.
+If you are looking for the official pterodactyl panel install please head over to https://github.com/pterodactyl/panel instead
+Current planned features for this fork:
+* Plugin manager connected to the panel
+* Permission manager via LuckPerms intergrated into the panel
+* Server statistics visible in the panel
+* More native support for other installs i prioritize (discord bots, valheim, rust)
+* Possibly support for website hosting or specific types of websites such as nextcloud
+* Whatever else i want to add to the panel
+
 # Pterodactyl Panel
 Pterodactyl is an open-source game server management panel built with PHP 7, React, and Go. Designed with security 
 in mind, Pterodactyl runs all game servers in isolated Docker containers while exposing a beautiful and intuitive
