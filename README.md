@@ -14,6 +14,7 @@ Current planned features for this fork:
 * Plugin manager connected to the panel
 * Permission manager via LuckPerms intergrated into the panel
 * Server statistics visible in the panel
+* Clustered minecraft server (for scalable instances like minigames, lobbies and whatever else you can think of)
 * More native support for other installs i prioritize (discord bots, valheim, rust)
 * Possibly support for website hosting or specific types of websites such as nextcloud
 * Whatever else i want to add to the panel
