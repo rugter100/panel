@@ -16,8 +16,15 @@ Current planned features for this fork:
 * Server statistics visible in the panel
 * Clustered minecraft server (for scalable instances like minigames, lobbies and whatever else you can think of)
 * More native support for other installs i prioritize (discord bots, valheim, rust)
+* automatic port forwarding in the firewall/(router?)
+* DNS management
 * Possibly support for website hosting or specific types of websites such as nextcloud
 * Whatever else i want to add to the panel
+
+Overall this install of pterodactyl will be more focussed on big public servers that mostly run minigames.
+Since i am a team of 1 and a beginner programmer (but a fast learner) it might take a while to implement these features. Feel free to collaborate or do other suggestions that could be useful in this install
+
+I am aware there are paid options that add some of these features but i find them to often be overpriced and i want to offer a free option and mabye even a better option.
 
 # Pterodactyl Panel
 Pterodactyl is an open-source game server management panel built with PHP 7, React, and Go. Designed with security 
