@@ -9,6 +9,7 @@ use Pterodactyl\Models\Backup;
 use Pterodactyl\Models\Server;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Extensions\Backups\BackupManager;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Pterodactyl\Repositories\Eloquent\BackupRepository;
 use Pterodactyl\Repositories\Wings\DaemonBackupRepository;
 use Pterodactyl\Exceptions\Service\Backup\TooManyBackupsException;
@@ -132,8 +133,9 @@ class InitiateBackupService
             }
         }
 
-        // Check if the server has reached or exceeded it's backup limit.
-        $successful = $server->backups()->where('is_successful', true);
+        // Check if the server has reached or exceeded its backup limit.
+        // completed_at == null will cover any ongoing backups, while is_successful == true will cover any completed backups.
+        $successful = $this->repository->getNonFailedBackups($server);
         if (!$server->backup_limit || $successful->count() >= $server->backup_limit) {
             // Do not allow the user to continue if this server is already at its limit and can't override.
             if (!$override || $server->backup_limit <= 0) {
