@@ -1,8 +1,3 @@
-{{-- Pterodactyl - Panel --}}
-{{-- Copyright (c) 2015 - 2017 Dane Everitt <dane@daneeveritt.com> --}}
-
-{{-- This software is licensed under the terms of the MIT license. --}}
-{{-- https://opensource.org/licenses/MIT --}}
 @extends('layouts.admin')
 
 @section('title')
@@ -98,7 +93,7 @@
                 <div class="row">
                     @if($node->maintenance_mode)
                     <div class="col-sm-12">
-                        <div class="info-box bg-grey">
+                        <div class="info-box bg-orange">
                             <span class="info-box-icon"><i class="ion ion-wrench"></i></span>
                             <div class="info-box-content" style="padding: 23px 10px 0;">
                                 <span class="info-box-text">This node is under</span>
@@ -112,7 +107,7 @@
                             <span class="info-box-icon"><i class="ion ion-ios-folder-outline"></i></span>
                             <div class="info-box-content" style="padding: 15px 10px 0;">
                                 <span class="info-box-text">Disk Space Allocated</span>
-                                <span class="info-box-number">{{ $stats['disk']['value'] }} / {{ $stats['disk']['max'] }} Mb</span>
+                                <span class="info-box-number">{{ $stats['disk']['value'] }} / {{ $stats['disk']['max'] }} MB</span>
                                 <div class="progress">
                                     <div class="progress-bar" style="width: {{ $stats['disk']['percent'] }}%"></div>
                                 </div>
@@ -124,7 +119,7 @@
                             <span class="info-box-icon"><i class="ion ion-ios-barcode-outline"></i></span>
                             <div class="info-box-content" style="padding: 15px 10px 0;">
                                 <span class="info-box-text">Memory Allocated</span>
-                                <span class="info-box-number">{{ $stats['memory']['value'] }} / {{ $stats['memory']['max'] }} Mb</span>
+                                <span class="info-box-number">{{ $stats['memory']['value'] }} / {{ $stats['memory']['max'] }} MB</span>
                                 <div class="progress">
                                     <div class="progress-bar" style="width: {{ $stats['memory']['percent'] }}%"></div>
                                 </div>

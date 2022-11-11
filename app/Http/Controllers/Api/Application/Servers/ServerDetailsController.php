@@ -13,26 +13,13 @@ use Pterodactyl\Http\Requests\Api\Application\Servers\UpdateServerBuildConfigura
 class ServerDetailsController extends ApplicationApiController
 {
     /**
-     * @var \Pterodactyl\Services\Servers\BuildModificationService
-     */
-    private $buildModificationService;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\DetailsModificationService
-     */
-    private $detailsModificationService;
-
-    /**
      * ServerDetailsController constructor.
      */
     public function __construct(
-        BuildModificationService $buildModificationService,
-        DetailsModificationService $detailsModificationService
+        private BuildModificationService $buildModificationService,
+        private DetailsModificationService $detailsModificationService
     ) {
         parent::__construct();
-
-        $this->buildModificationService = $buildModificationService;
-        $this->detailsModificationService = $detailsModificationService;
     }
 
     /**
@@ -42,14 +29,14 @@ class ServerDetailsController extends ApplicationApiController
      * @throws \Pterodactyl\Exceptions\Model\DataValidationException
      * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
      */
-    public function details(UpdateServerDetailsRequest $request): array
+    public function details(UpdateServerDetailsRequest $request, Server $server): array
     {
-        $server = $this->detailsModificationService->returnUpdatedModel()->handle(
-            $request->getModel(Server::class),
+        $updated = $this->detailsModificationService->returnUpdatedModel()->handle(
+            $server,
             $request->validated()
         );
 
-        return $this->fractal->item($server)
+        return $this->fractal->item($updated)
             ->transformWith($this->getTransformer(ServerTransformer::class))
             ->toArray();
     }

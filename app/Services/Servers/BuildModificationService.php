@@ -15,86 +15,61 @@ use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
 class BuildModificationService
 {
     /**
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    private $connection;
-
-    /**
-     * @var \Pterodactyl\Repositories\Wings\DaemonServerRepository
-     */
-    private $daemonServerRepository;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\ServerConfigurationStructureService
-     */
-    private $structureService;
-
-    /**
      * BuildModificationService constructor.
-     *
-     * @param \Pterodactyl\Services\Servers\ServerConfigurationStructureService $structureService
      */
     public function __construct(
-        ServerConfigurationStructureService $structureService,
-        ConnectionInterface $connection,
-        DaemonServerRepository $daemonServerRepository
+        private ConnectionInterface $connection,
+        private DaemonServerRepository $daemonServerRepository,
+        private ServerConfigurationStructureService $structureService
     ) {
-        $this->daemonServerRepository = $daemonServerRepository;
-        $this->connection = $connection;
-        $this->structureService = $structureService;
     }
 
     /**
      * Change the build details for a specified server.
      *
-     * @return \Pterodactyl\Models\Server
-     *
      * @throws \Throwable
      * @throws \Pterodactyl\Exceptions\DisplayException
      */
-    public function handle(Server $server, array $data)
+    public function handle(Server $server, array $data): Server
     {
-        $this->connection->beginTransaction();
+        /** @var \Pterodactyl\Models\Server $server */
+        $server = $this->connection->transaction(function () use ($server, $data) {
+            $this->processAllocations($server, $data);
 
-        $this->processAllocations($server, $data);
-
-        if (isset($data['allocation_id']) && $data['allocation_id'] != $server->allocation_id) {
-            try {
-                Allocation::query()->where('id', $data['allocation_id'])->where('server_id', $server->id)->firstOrFail();
-            } catch (ModelNotFoundException $ex) {
-                throw new DisplayException('The requested default allocation is not currently assigned to this server.');
+            if (isset($data['allocation_id']) && $data['allocation_id'] != $server->allocation_id) {
+                try {
+                    Allocation::query()->where('id', $data['allocation_id'])->where('server_id', $server->id)->firstOrFail();
+                } catch (ModelNotFoundException) {
+                    throw new DisplayException('The requested default allocation is not currently assigned to this server.');
+                }
             }
-        }
 
-        // If any of these values are passed through in the data array go ahead and set
-        // them correctly on the server model.
-        $merge = Arr::only($data, ['oom_disabled', 'memory', 'swap', 'io', 'cpu', 'threads', 'disk', 'allocation_id']);
+            // If any of these values are passed through in the data array go ahead and set
+            // them correctly on the server model.
+            $merge = Arr::only($data, ['oom_disabled', 'memory', 'swap', 'io', 'cpu', 'threads', 'disk', 'allocation_id']);
 
-        $server->forceFill(array_merge($merge, [
-            'database_limit' => Arr::get($data, 'database_limit', 0) ?? null,
-            'allocation_limit' => Arr::get($data, 'allocation_limit', 0) ?? null,
-            'backup_limit' => Arr::get($data, 'backup_limit', 0) ?? 0,
-        ]))->saveOrFail();
+            $server->forceFill(array_merge($merge, [
+                'database_limit' => Arr::get($data, 'database_limit', 0) ?? null,
+                'allocation_limit' => Arr::get($data, 'allocation_limit', 0) ?? null,
+                'backup_limit' => Arr::get($data, 'backup_limit', 0) ?? 0,
+            ]))->saveOrFail();
 
-        $server = $server->fresh();
+            return $server->refresh();
+        });
 
         $updateData = $this->structureService->handle($server);
 
         // Because Wings always fetches an updated configuration from the Panel when booting
         // a server this type of exception can be safely "ignored" and just written to the logs.
-        // Ideally this request succeedes so we can apply resource modifications on the fly
-        // but if it fails it isn't the end of the world.
+        // Ideally this request succeeds, so we can apply resource modifications on the fly, but
+        // if it fails we can just continue on as normal.
         if (!empty($updateData['build'])) {
             try {
-                $this->daemonServerRepository->setServer($server)->update([
-                    'build' => $updateData['build'],
-                ]);
+                $this->daemonServerRepository->setServer($server)->sync();
             } catch (DaemonConnectionException $exception) {
                 Log::warning($exception, ['server_id' => $server->id]);
             }
         }
-
-        $this->connection->commit();
 
         return $server;
     }
@@ -104,7 +79,7 @@ class BuildModificationService
      *
      * @throws \Pterodactyl\Exceptions\DisplayException
      */
-    private function processAllocations(Server $server, array &$data)
+    private function processAllocations(Server $server, array &$data): void
     {
         if (empty($data['add_allocations']) && empty($data['remove_allocations'])) {
             return;

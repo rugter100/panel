@@ -11,18 +11,11 @@ use Pterodactyl\Http\Controllers\Api\Application\ApplicationApiController;
 class NestController extends ApplicationApiController
 {
     /**
-     * @var \Pterodactyl\Contracts\Repository\NestRepositoryInterface
-     */
-    private $repository;
-
-    /**
      * NestController constructor.
      */
-    public function __construct(NestRepositoryInterface $repository)
+    public function __construct(private NestRepositoryInterface $repository)
     {
         parent::__construct();
-
-        $this->repository = $repository;
     }
 
     /**
@@ -40,9 +33,9 @@ class NestController extends ApplicationApiController
     /**
      * Return information about a single Nest model.
      */
-    public function view(GetNestsRequest $request): array
+    public function view(GetNestsRequest $request, Nest $nest): array
     {
-        return $this->fractal->item($request->getModel(Nest::class))
+        return $this->fractal->item($nest)
             ->transformWith($this->getTransformer(NestTransformer::class))
             ->toArray();
     }

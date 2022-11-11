@@ -4,17 +4,17 @@ namespace Pterodactyl\Transformers\Api\Application;
 
 use Pterodactyl\Models\Node;
 use Pterodactyl\Models\Server;
+use League\Fractal\Resource\Item;
 use Pterodactyl\Models\Allocation;
+use League\Fractal\Resource\NullResource;
 use Pterodactyl\Services\Acl\Api\AdminAcl;
 
 class AllocationTransformer extends BaseTransformer
 {
     /**
      * Relationships that can be loaded onto allocation transformations.
-     *
-     * @var array
      */
-    protected $availableIncludes = ['node', 'server'];
+    protected array $availableIncludes = ['node', 'server'];
 
     /**
      * Return the resource name for the JSONAPI output.
@@ -26,10 +26,8 @@ class AllocationTransformer extends BaseTransformer
 
     /**
      * Return a generic transformed allocation array.
-     *
-     * @return array
      */
-    public function transform(Allocation $allocation)
+    public function transform(Allocation $allocation): array
     {
         return [
             'id' => $allocation->id,
@@ -44,11 +42,9 @@ class AllocationTransformer extends BaseTransformer
     /**
      * Load the node relationship onto a given transformation.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeNode(Allocation $allocation)
+    public function includeNode(Allocation $allocation): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_NODES)) {
             return $this->null();
@@ -64,11 +60,9 @@ class AllocationTransformer extends BaseTransformer
     /**
      * Load the server relationship onto a given transformation.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeServer(Allocation $allocation)
+    public function includeServer(Allocation $allocation): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_SERVERS) || !$allocation->server) {
             return $this->null();

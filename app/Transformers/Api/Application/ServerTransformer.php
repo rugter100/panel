@@ -3,22 +3,20 @@
 namespace Pterodactyl\Transformers\Api\Application;
 
 use Pterodactyl\Models\Server;
+use League\Fractal\Resource\Item;
+use League\Fractal\Resource\Collection;
+use League\Fractal\Resource\NullResource;
 use Pterodactyl\Services\Acl\Api\AdminAcl;
 use Pterodactyl\Services\Servers\EnvironmentService;
 
 class ServerTransformer extends BaseTransformer
 {
-    /**
-     * @var \Pterodactyl\Services\Servers\EnvironmentService
-     */
-    private $environmentService;
+    private EnvironmentService $environmentService;
 
     /**
      * List of resources that can be included.
-     *
-     * @var array
      */
-    protected $availableIncludes = [
+    protected array $availableIncludes = [
         'allocations',
         'user',
         'subusers',
@@ -69,6 +67,7 @@ class ServerTransformer extends BaseTransformer
                 'io' => $server->io,
                 'cpu' => $server->cpu,
                 'threads' => $server->threads,
+                'oom_disabled' => $server->oom_disabled,
             ],
             'feature_limits' => [
                 'databases' => $server->database_limit,
@@ -95,11 +94,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array of allocations for this server.
      *
-     * @return \League\Fractal\Resource\Collection|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeAllocations(Server $server)
+    public function includeAllocations(Server $server): Collection|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_ALLOCATIONS)) {
             return $this->null();
@@ -113,11 +110,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array of data about subusers for this server.
      *
-     * @return \League\Fractal\Resource\Collection|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeSubusers(Server $server)
+    public function includeSubusers(Server $server): Collection|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_USERS)) {
             return $this->null();
@@ -131,11 +126,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array of data about subusers for this server.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeUser(Server $server)
+    public function includeUser(Server $server): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_USERS)) {
             return $this->null();
@@ -149,11 +142,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array with nest information for this server.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeNest(Server $server)
+    public function includeNest(Server $server): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_NESTS)) {
             return $this->null();
@@ -167,11 +158,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array with egg information for this server.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeEgg(Server $server)
+    public function includeEgg(Server $server): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_EGGS)) {
             return $this->null();
@@ -185,11 +174,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array of data about subusers for this server.
      *
-     * @return \League\Fractal\Resource\Collection|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeVariables(Server $server)
+    public function includeVariables(Server $server): Collection|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_SERVERS)) {
             return $this->null();
@@ -203,11 +190,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array with location information for this server.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeLocation(Server $server)
+    public function includeLocation(Server $server): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_LOCATIONS)) {
             return $this->null();
@@ -221,11 +206,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array with node information for this server.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeNode(Server $server)
+    public function includeNode(Server $server): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_NODES)) {
             return $this->null();
@@ -239,11 +222,9 @@ class ServerTransformer extends BaseTransformer
     /**
      * Return a generic array with database information for this server.
      *
-     * @return \League\Fractal\Resource\Collection|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeDatabases(Server $server)
+    public function includeDatabases(Server $server): Collection|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_SERVER_DATABASES)) {
             return $this->null();

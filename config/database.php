@@ -57,29 +57,6 @@ return [
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT', true),
             ]) : [],
         ],
-
-        /*
-        | -------------------------------------------------------------------------
-        | Test Database Connection
-        | -------------------------------------------------------------------------
-        |
-        | This connection is used by the integration and HTTP tests for Pterodactyl
-        | development. Normal users of the Panel do not need to adjust any settings
-        | in here.
-        */
-        'testing' => [
-            'driver' => 'mysql',
-            'host' => env('TESTING_DB_HOST', '127.0.0.1'),
-            'port' => env('TESTING_DB_PORT', '3306'),
-            'database' => env('TESTING_DB_DATABASE', 'panel_test'),
-            'username' => env('TESTING_DB_USERNAME', 'pterodactyl_test'),
-            'password' => env('TESTING_DB_PASSWORD', ''),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'strict' => false,
-            'timezone' => env('DB_TIMEZONE', Time::getMySQLTimezoneOffset(env('APP_TIMEZONE', 'UTC'))),
-        ],
     ],
 
     /*
@@ -111,13 +88,14 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'pterodactyl'), '_') . '_database_'),
         ],
 
         'default' => [
             'scheme' => env('REDIS_SCHEME', 'tcp'),
             'path' => env('REDIS_PATH', '/run/redis/redis.sock'),
             'host' => env('REDIS_HOST', 'localhost'),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', 6379),
             'database' => env('REDIS_DATABASE', 0),
@@ -136,6 +114,7 @@ return [
             'scheme' => env('REDIS_SCHEME', 'tcp'),
             'path' => env('REDIS_PATH', '/run/redis/redis.sock'),
             'host' => env('REDIS_HOST', 'localhost'),
+            'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', 6379),
             'database' => env('REDIS_DATABASE_SESSIONS', 1),

@@ -2,10 +2,14 @@
 
 namespace Pterodactyl\Models;
 
+use Illuminate\Support\Str;
 use Symfony\Component\Yaml\Yaml;
 use Illuminate\Container\Container;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Encryption\Encrypter;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @property int $id
@@ -50,22 +54,16 @@ class Node extends Model
 
     /**
      * The table associated with the model.
-     *
-     * @var string
      */
     protected $table = 'nodes';
 
     /**
      * The attributes excluded from the model's JSON form.
-     *
-     * @var array
      */
     protected $hidden = ['daemon_token_id', 'daemon_token'];
 
     /**
      * Cast values to correct type.
-     *
-     * @var array
      */
     protected $casts = [
         'location_id' => 'integer',
@@ -80,8 +78,6 @@ class Node extends Model
 
     /**
      * Fields that are mass assignable.
-     *
-     * @var array
      */
     protected $fillable = [
         'public', 'name', 'location_id',
@@ -92,10 +88,7 @@ class Node extends Model
         'description', 'maintenance_mode',
     ];
 
-    /**
-     * @var array
-     */
-    public static $validationRules = [
+    public static array $validationRules = [
         'name' => 'required|regex:/^([\w .-]{1,100})$/',
         'description' => 'string|nullable',
         'location_id' => 'required|exists:locations,id',
@@ -116,8 +109,6 @@ class Node extends Model
 
     /**
      * Default values for specific columns that are generally not changed on base installs.
-     *
-     * @var array
      */
     protected $attributes = [
         'public' => true,
@@ -140,10 +131,8 @@ class Node extends Model
 
     /**
      * Returns the configuration as an array.
-     *
-     * @return array
      */
-    public function getConfiguration()
+    public function getConfiguration(): array
     {
         return [
             'debug' => false,
@@ -155,8 +144,8 @@ class Node extends Model
                 'port' => $this->daemonListen,
                 'ssl' => [
                     'enabled' => (!$this->behind_proxy && $this->scheme === 'https'),
-                    'cert' => '/etc/letsencrypt/live/' . $this->fqdn . '/fullchain.pem',
-                    'key' => '/etc/letsencrypt/live/' . $this->fqdn . '/privkey.pem',
+                    'cert' => '/etc/letsencrypt/live/' . Str::lower($this->fqdn) . '/fullchain.pem',
+                    'key' => '/etc/letsencrypt/live/' . Str::lower($this->fqdn) . '/privkey.pem',
                 ],
                 'upload_limit' => $this->upload_size,
             ],
@@ -173,20 +162,16 @@ class Node extends Model
 
     /**
      * Returns the configuration in Yaml format.
-     *
-     * @return string
      */
-    public function getYamlConfiguration()
+    public function getYamlConfiguration(): string
     {
         return Yaml::dump($this->getConfiguration(), 4, 2, Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE);
     }
 
     /**
      * Returns the configuration in JSON format.
-     *
-     * @return string
      */
-    public function getJsonConfiguration(bool $pretty = false)
+    public function getJsonConfiguration(bool $pretty = false): string
     {
         return json_encode($this->getConfiguration(), $pretty ? JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT : JSON_UNESCAPED_SLASHES);
     }
@@ -201,40 +186,36 @@ class Node extends Model
         );
     }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
-     */
-    public function mounts()
+    public function isUnderMaintenance(): bool
+    {
+        return $this->maintenance_mode;
+    }
+
+    public function mounts(): HasManyThrough
     {
         return $this->hasManyThrough(Mount::class, MountNode::class, 'node_id', 'id', 'id', 'mount_id');
     }
 
     /**
      * Gets the location associated with a node.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function location()
+    public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
     }
 
     /**
      * Gets the servers associated with a node.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function servers()
+    public function servers(): HasMany
     {
         return $this->hasMany(Server::class);
     }
 
     /**
      * Gets the allocations associated with a node.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function allocations()
+    public function allocations(): HasMany
     {
         return $this->hasMany(Allocation::class);
     }

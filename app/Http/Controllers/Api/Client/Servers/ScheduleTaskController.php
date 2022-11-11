@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use Pterodactyl\Models\Server;
 use Pterodactyl\Models\Schedule;
 use Illuminate\Http\JsonResponse;
+use Pterodactyl\Facades\Activity;
 use Pterodactyl\Models\Permission;
 use Pterodactyl\Repositories\Eloquent\TaskRepository;
 use Pterodactyl\Exceptions\Http\HttpForbiddenException;
@@ -20,34 +21,24 @@ use Pterodactyl\Http\Requests\Api\Client\Servers\Schedules\StoreTaskRequest;
 class ScheduleTaskController extends ClientApiController
 {
     /**
-     * @var \Pterodactyl\Repositories\Eloquent\TaskRepository
-     */
-    private $repository;
-
-    /**
      * ScheduleTaskController constructor.
      */
-    public function __construct(TaskRepository $repository)
+    public function __construct(private TaskRepository $repository)
     {
         parent::__construct();
-
-        $this->repository = $repository;
     }
 
     /**
      * Create a new task for a given schedule and store it in the database.
      *
-     * @return array
-     *
-     * @throws \Pterodactyl\Exceptions\Model\HttpForbiddenException
      * @throws \Pterodactyl\Exceptions\Model\DataValidationException
      * @throws \Pterodactyl\Exceptions\Service\ServiceLimitExceededException
      */
-    public function store(StoreTaskRequest $request, Server $server, Schedule $schedule)
+    public function store(StoreTaskRequest $request, Server $server, Schedule $schedule): array
     {
         $limit = config('pterodactyl.client_features.schedules.per_schedule_task_limit', 10);
         if ($schedule->tasks()->count() >= $limit) {
-            throw new ServiceLimitExceededException("Schedules may not have more than {$limit} tasks associated with them. Creating this task would put this schedule over the limit.");
+            throw new ServiceLimitExceededException("Schedules may not have more than $limit tasks associated with them. Creating this task would put this schedule over the limit.");
         }
 
         if ($server->backup_limit === 0 && $request->action === 'backup') {
@@ -67,6 +58,11 @@ class ScheduleTaskController extends ClientApiController
             'continue_on_failure' => (bool) $request->input('continue_on_failure'),
         ]);
 
+        Activity::event('server:task.create')
+            ->subject($schedule, $task)
+            ->property(['name' => $schedule->name, 'action' => $task->action, 'payload' => $task->payload])
+            ->log();
+
         return $this->fractal->item($task)
             ->transformWith($this->getTransformer(TaskTransformer::class))
             ->toArray();
@@ -75,13 +71,10 @@ class ScheduleTaskController extends ClientApiController
     /**
      * Updates a given task for a server.
      *
-     * @return array
-     *
-     * @throws \Pterodactyl\Exceptions\Model\HttpForbiddenException
      * @throws \Pterodactyl\Exceptions\Model\DataValidationException
      * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
      */
-    public function update(StoreTaskRequest $request, Server $server, Schedule $schedule, Task $task)
+    public function update(StoreTaskRequest $request, Server $server, Schedule $schedule, Task $task): array
     {
         if ($schedule->id !== $task->schedule_id || $server->id !== $schedule->server_id) {
             throw new NotFoundHttpException();
@@ -98,6 +91,11 @@ class ScheduleTaskController extends ClientApiController
             'continue_on_failure' => (bool) $request->input('continue_on_failure'),
         ]);
 
+        Activity::event('server:task.update')
+            ->subject($schedule, $task)
+            ->property(['name' => $schedule->name, 'action' => $task->action, 'payload' => $task->payload])
+            ->log();
+
         return $this->fractal->item($task->refresh())
             ->transformWith($this->getTransformer(TaskTransformer::class))
             ->toArray();
@@ -107,11 +105,9 @@ class ScheduleTaskController extends ClientApiController
      * Delete a given task for a schedule. If there are subsequent tasks stored in the database
      * for this schedule their sequence IDs are decremented properly.
      *
-     * @return \Illuminate\Http\JsonResponse
-     *
      * @throws \Exception
      */
-    public function delete(ClientApiRequest $request, Server $server, Schedule $schedule, Task $task)
+    public function delete(ClientApiRequest $request, Server $server, Schedule $schedule, Task $task): JsonResponse
     {
         if ($task->schedule_id !== $schedule->id || $schedule->server_id !== $server->id) {
             throw new NotFoundHttpException();
@@ -126,6 +122,8 @@ class ScheduleTaskController extends ClientApiController
         ]);
 
         $task->delete();
+
+        Activity::event('server:task.delete')->subject($schedule, $task)->property('name', $schedule->name)->log();
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

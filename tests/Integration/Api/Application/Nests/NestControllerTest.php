@@ -9,10 +9,7 @@ use Pterodactyl\Tests\Integration\Api\Application\ApplicationApiIntegrationTestC
 
 class NestControllerTest extends ApplicationApiIntegrationTestCase
 {
-    /**
-     * @var \Pterodactyl\Contracts\Repository\NestRepositoryInterface
-     */
-    private $repository;
+    private NestRepositoryInterface $repository;
 
     /**
      * Setup tests.
@@ -25,7 +22,7 @@ class NestControllerTest extends ApplicationApiIntegrationTestCase
     }
 
     /**
-     * Test that the expected nests are returned in the request.
+     * Test that the expected nests are returned by the request.
      */
     public function testNestResponse()
     {
@@ -120,19 +117,6 @@ class NestControllerTest extends ApplicationApiIntegrationTestCase
      * to access a resource.
      */
     public function testErrorReturnedIfNoPermission()
-    {
-        $nest = $this->repository->find(1);
-        $this->createNewDefaultApiKey($this->getApiUser(), ['r_nests' => 0]);
-
-        $response = $this->getJson('/api/application/nests/' . $nest->id);
-        $this->assertAccessDeniedJson($response);
-    }
-
-    /**
-     * Test that a nest's existence is not exposed unless an API key has permission
-     * to access the resource.
-     */
-    public function testResourceIsNotExposedWithoutPermissions()
     {
         $nest = $this->repository->find(1);
         $this->createNewDefaultApiKey($this->getApiUser(), ['r_nests' => 0]);

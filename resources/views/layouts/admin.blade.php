@@ -1,8 +1,3 @@
-{{-- Pterodactyl - Panel --}}
-{{-- Copyright (c) 2015 - 2017 Dane Everitt <dane@daneeveritt.com> --}}
-
-{{-- This software is licensed under the terms of the MIT license. --}}
-{{-- https://opensource.org/licenses/MIT --}}
 <!DOCTYPE html>
 <html>
     <head>
@@ -195,9 +190,17 @@
                             cancelButtonColor: '#d33',
                             confirmButtonText: 'Log out'
                         }, function () {
-                            window.location = $(that).attr('href');
+                             $.ajax({
+                                type: 'POST',
+                                url: '{{ route('auth.logout') }}',
+                                data: {
+                                    _token: '{{ csrf_token() }}'
+                                },complete: function () {
+                                    window.location.href = '{{route('auth.login')}}';
+                                }
                         });
                     });
+                });
                 </script>
             @endif
 

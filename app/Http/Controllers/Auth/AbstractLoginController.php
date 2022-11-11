@@ -7,7 +7,9 @@ use Pterodactyl\Models\User;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Auth\Events\Failed;
-use Illuminate\Contracts\Config\Repository;
+use Illuminate\Container\Container;
+use Illuminate\Support\Facades\Event;
+use Pterodactyl\Events\Auth\DirectLogin;
 use Pterodactyl\Exceptions\DisplayException;
 use Pterodactyl\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -17,47 +19,31 @@ abstract class AbstractLoginController extends Controller
 {
     use AuthenticatesUsers;
 
+    protected AuthManager $auth;
+
     /**
      * Lockout time for failed login requests.
-     *
-     * @var int
      */
-    protected $lockoutTime;
+    protected int $lockoutTime;
 
     /**
      * After how many attempts should logins be throttled and locked.
-     *
-     * @var int
      */
-    protected $maxLoginAttempts;
+    protected int $maxLoginAttempts;
 
     /**
      * Where to redirect users after login / registration.
-     *
-     * @var string
      */
-    protected $redirectTo = '/';
-
-    /**
-     * @var \Illuminate\Auth\AuthManager
-     */
-    protected $auth;
-
-    /**
-     * @var \Illuminate\Contracts\Config\Repository
-     */
-    protected $config;
+    protected string $redirectTo = '/';
 
     /**
      * LoginController constructor.
      */
-    public function __construct(AuthManager $auth, Repository $config)
+    public function __construct()
     {
-        $this->lockoutTime = $config->get('auth.lockout.time');
-        $this->maxLoginAttempts = $config->get('auth.lockout.attempts');
-
-        $this->auth = $auth;
-        $this->config = $config;
+        $this->lockoutTime = config('auth.lockout.time');
+        $this->maxLoginAttempts = config('auth.lockout.attempts');
+        $this->auth = Container::getInstance()->make(AuthManager::class);
     }
 
     /**
@@ -84,12 +70,16 @@ abstract class AbstractLoginController extends Controller
      */
     protected function sendLoginResponse(User $user, Request $request): JsonResponse
     {
+        $request->session()->remove('auth_confirmation_token');
         $request->session()->regenerate();
+
         $this->clearLoginAttempts($request);
 
         $this->auth->guard()->login($user, true);
 
-        return JsonResponse::create([
+        Event::dispatch(new DirectLogin($user, true));
+
+        return new JsonResponse([
             'data' => [
                 'complete' => true,
                 'intended' => $this->redirectPath(),
@@ -99,9 +89,7 @@ abstract class AbstractLoginController extends Controller
     }
 
     /**
-     * Determine if the user is logging in using an email or username,.
-     *
-     * @param string $input
+     * Determine if the user is logging in using an email or username.
      */
     protected function getField(string $input = null): string
     {
@@ -113,6 +101,6 @@ abstract class AbstractLoginController extends Controller
      */
     protected function fireFailedLoginEvent(Authenticatable $user = null, array $credentials = [])
     {
-        event(new Failed('auth', $user, $credentials));
+        Event::dispatch(new Failed('auth', $user, $credentials));
     }
 }

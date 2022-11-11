@@ -3,7 +3,6 @@
 namespace Pterodactyl\Http\Controllers\Api\Remote\Servers;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -17,68 +16,28 @@ use Pterodactyl\Repositories\Eloquent\ServerRepository;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
 use Pterodactyl\Repositories\Wings\DaemonTransferRepository;
 use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
-use Pterodactyl\Services\Servers\ServerConfigurationStructureService;
 
 class ServerTransferController extends Controller
 {
     /**
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    private $connection;
-
-    /**
-     * @var \Pterodactyl\Repositories\Eloquent\ServerRepository
-     */
-    private $repository;
-
-    /**
-     * @var \Pterodactyl\Repositories\Wings\DaemonServerRepository
-     */
-    private $daemonServerRepository;
-
-    /**
-     * @var \Pterodactyl\Repositories\Wings\DaemonTransferRepository
-     */
-    private $daemonTransferRepository;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\ServerConfigurationStructureService
-     */
-    private $configurationStructureService;
-
-    /**
-     * @var \Pterodactyl\Services\Nodes\NodeJWTService
-     */
-    private $jwtService;
-
-    /**
      * ServerTransferController constructor.
      */
     public function __construct(
-        ConnectionInterface $connection,
-        ServerRepository $repository,
-        DaemonServerRepository $daemonServerRepository,
-        DaemonTransferRepository $daemonTransferRepository,
-        ServerConfigurationStructureService $configurationStructureService,
-        NodeJWTService $jwtService
+        private ConnectionInterface $connection,
+        private ServerRepository $repository,
+        private DaemonServerRepository $daemonServerRepository,
+        private DaemonTransferRepository $daemonTransferRepository,
+        private NodeJWTService $jwtService
     ) {
-        $this->connection = $connection;
-        $this->repository = $repository;
-        $this->daemonServerRepository = $daemonServerRepository;
-        $this->daemonTransferRepository = $daemonTransferRepository;
-        $this->configurationStructureService = $configurationStructureService;
-        $this->jwtService = $jwtService;
     }
 
     /**
      * The daemon notifies us about the archive status.
      *
-     * @return \Illuminate\Http\JsonResponse
-     *
      * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
      * @throws \Throwable
      */
-    public function archive(Request $request, string $uuid)
+    public function archive(Request $request, string $uuid): JsonResponse
     {
         $server = $this->repository->getByUuid($uuid);
 
@@ -87,20 +46,7 @@ class ServerTransferController extends Controller
             return $this->processFailedTransfer($server->transfer);
         }
 
-        // We want to generate a new configuration using the new node_id value from the
-        // transfer, and not the old node value.
-        $data = $this->configurationStructureService->handle($server, [
-            'node_id' => $server->transfer->new_node,
-        ]);
-
-        $allocations = $server->getAllocationMappings();
-        $primary = array_key_first($allocations);
-        Arr::set($data, 'allocations.default.ip', $primary);
-        Arr::set($data, 'allocations.default.port', $allocations[$primary][0]);
-        Arr::set($data, 'service.skip_scripts', true);
-        Arr::set($data, 'suspended', false);
-
-        $this->connection->transaction(function () use ($data, $server) {
+        $this->connection->transaction(function () use ($server) {
             // This token is used by the new node the server is being transferred to. It allows
             // that node to communicate with the old node during the process to initiate the
             // actual file transfer.
@@ -119,7 +65,7 @@ class ServerTransferController extends Controller
             $this->daemonTransferRepository
                 ->setServer($server)
                 ->setNode($server->transfer->newNode)
-                ->notify($server, $data, $server->node, $token->toString());
+                ->notify($server, $token);
         });
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
@@ -128,11 +74,9 @@ class ServerTransferController extends Controller
     /**
      * The daemon notifies us about a transfer failure.
      *
-     * @return \Illuminate\Http\JsonResponse
-     *
      * @throws \Throwable
      */
-    public function failure(string $uuid)
+    public function failure(string $uuid): JsonResponse
     {
         $server = $this->repository->getByUuid($uuid);
 
@@ -141,8 +85,6 @@ class ServerTransferController extends Controller
 
     /**
      * The daemon notifies us about a transfer success.
-     *
-     * @return \Illuminate\Http\JsonResponse
      *
      * @throws \Throwable
      */
@@ -184,14 +126,12 @@ class ServerTransferController extends Controller
     }
 
     /**
-     * Release all of the reserved allocations for this transfer and mark it as failed in
+     * Release all the reserved allocations for this transfer and mark it as failed in
      * the database.
-     *
-     * @return \Illuminate\Http\JsonResponse
      *
      * @throws \Throwable
      */
-    protected function processFailedTransfer(ServerTransfer $transfer)
+    protected function processFailedTransfer(ServerTransfer $transfer): JsonResponse
     {
         $this->connection->transaction(function () use (&$transfer) {
             $transfer->forceFill(['successful' => false])->saveOrFail();

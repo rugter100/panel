@@ -1,8 +1,3 @@
-{{-- Pterodactyl - Panel --}}
-{{-- Copyright (c) 2015 - 2017 Dane Everitt <dane@daneeveritt.com> --}}
-
-{{-- This software is licensed under the terms of the MIT license. --}}
-{{-- https://opensource.org/licenses/MIT --}}
 @extends('layouts.admin')
 
 @section('title')
@@ -70,7 +65,11 @@
     @parent
     <script>
     $('#configTokenBtn').on('click', function (event) {
-        $.getJSON('{{ route('admin.nodes.view.configuration.token', $node->id) }}').done(function (data) {
+        $.ajax({
+            method: 'POST',
+            url: '{{ route('admin.nodes.view.configuration.token', $node->id) }}',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        }).done(function (data) {
             swal({
                 type: 'success',
                 title: 'Token created.',

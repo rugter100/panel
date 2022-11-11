@@ -12,7 +12,6 @@ use Illuminate\Support\Collection;
 use Pterodactyl\Models\Allocation;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Models\Objects\DeploymentObject;
-use Pterodactyl\Repositories\Eloquent\EggRepository;
 use Pterodactyl\Repositories\Eloquent\ServerRepository;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
 use Pterodactyl\Services\Deployment\FindViableNodesService;
@@ -23,84 +22,18 @@ use Pterodactyl\Exceptions\Http\Connection\DaemonConnectionException;
 class ServerCreationService
 {
     /**
-     * @var \Pterodactyl\Services\Deployment\AllocationSelectionService
-     */
-    private $allocationSelectionService;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\ServerConfigurationStructureService
-     */
-    private $configurationStructureService;
-
-    /**
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    private $connection;
-
-    /**
-     * @var \Pterodactyl\Services\Deployment\FindViableNodesService
-     */
-    private $findViableNodesService;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\VariableValidatorService
-     */
-    private $validatorService;
-
-    /**
-     * @var \Pterodactyl\Repositories\Eloquent\EggRepository
-     */
-    private $eggRepository;
-
-    /**
-     * @var \Pterodactyl\Repositories\Eloquent\ServerRepository
-     */
-    private $repository;
-
-    /**
-     * @var \Pterodactyl\Repositories\Eloquent\ServerVariableRepository
-     */
-    private $serverVariableRepository;
-
-    /**
-     * @var \Pterodactyl\Repositories\Wings\DaemonServerRepository
-     */
-    private $daemonServerRepository;
-
-    /**
-     * @var \Pterodactyl\Services\Servers\ServerDeletionService
-     */
-    private $serverDeletionService;
-
-    /**
-     * CreationService constructor.
-     *
-     * @param \Pterodactyl\Services\Servers\ServerConfigurationStructureService $configurationStructureService
-     * @param \Pterodactyl\Services\Servers\ServerDeletionService $serverDeletionService
-     * @param \Pterodactyl\Services\Servers\VariableValidatorService $validatorService
+     * ServerCreationService constructor.
      */
     public function __construct(
-        AllocationSelectionService $allocationSelectionService,
-        ConnectionInterface $connection,
-        DaemonServerRepository $daemonServerRepository,
-        EggRepository $eggRepository,
-        FindViableNodesService $findViableNodesService,
-        ServerConfigurationStructureService $configurationStructureService,
-        ServerDeletionService $serverDeletionService,
-        ServerRepository $repository,
-        ServerVariableRepository $serverVariableRepository,
-        VariableValidatorService $validatorService
+        private AllocationSelectionService $allocationSelectionService,
+        private ConnectionInterface $connection,
+        private DaemonServerRepository $daemonServerRepository,
+        private FindViableNodesService $findViableNodesService,
+        private ServerRepository $repository,
+        private ServerDeletionService $serverDeletionService,
+        private ServerVariableRepository $serverVariableRepository,
+        private VariableValidatorService $validatorService
     ) {
-        $this->allocationSelectionService = $allocationSelectionService;
-        $this->configurationStructureService = $configurationStructureService;
-        $this->connection = $connection;
-        $this->findViableNodesService = $findViableNodesService;
-        $this->validatorService = $validatorService;
-        $this->eggRepository = $eggRepository;
-        $this->repository = $repository;
-        $this->serverVariableRepository = $serverVariableRepository;
-        $this->daemonServerRepository = $daemonServerRepository;
-        $this->serverDeletionService = $serverDeletionService;
     }
 
     /**
@@ -162,15 +95,10 @@ class ServerCreationService
 
         try {
             $this->daemonServerRepository->setServer($server)->create(
-                array_merge(
-                    $this->configurationStructureService->handle($server),
-                    [
-                        'start_on_completion' => Arr::get($data, 'start_on_completion', false),
-                    ],
-                ),
+                Arr::get($data, 'start_on_completion', false) ?? false
             );
         } catch (DaemonConnectionException $exception) {
-            $this->serverDeletionService->withForce(true)->handle($server);
+            $this->serverDeletionService->withForce()->handle($server);
 
             throw $exception;
         }
@@ -242,7 +170,7 @@ class ServerCreationService
     /**
      * Configure the allocations assigned to this server.
      */
-    private function storeAssignedAllocations(Server $server, array $data)
+    private function storeAssignedAllocations(Server $server, array $data): void
     {
         $records = [$data['allocation_id']];
         if (isset($data['allocation_additional']) && is_array($data['allocation_additional'])) {
@@ -257,7 +185,7 @@ class ServerCreationService
     /**
      * Process environment variables passed for this server and store them in the database.
      */
-    private function storeEggVariables(Server $server, Collection $variables)
+    private function storeEggVariables(Server $server, Collection $variables): void
     {
         $records = $variables->map(function ($result) use ($server) {
             return [

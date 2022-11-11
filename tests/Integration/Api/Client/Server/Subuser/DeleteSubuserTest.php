@@ -32,8 +32,9 @@ class DeleteSubuserTest extends ClientApiIntegrationTestCase
         /** @var \Pterodactyl\Models\User $differentUser */
         $differentUser = User::factory()->create();
 
+        $real = Uuid::uuid4()->toString();
         // Generate a UUID that lines up with a user in the database if it were to be cast to an int.
-        $uuid = $differentUser->id . str_repeat('a', strlen((string) $differentUser->id)) . substr(Uuid::uuid4()->toString(), 8);
+        $uuid = $differentUser->id . substr($real, strlen((string) $differentUser->id));
 
         /** @var \Pterodactyl\Models\User $subuser */
         $subuser = User::factory()->create(['uuid' => $uuid]);
@@ -46,7 +47,7 @@ class DeleteSubuserTest extends ClientApiIntegrationTestCase
 
         $mock->expects('setServer->revokeUserJTI')->with($subuser->id)->andReturnUndefined();
 
-        $this->actingAs($user)->deleteJson($this->link($server) . "/users/{$subuser->uuid}")->assertNoContent();
+        $this->actingAs($user)->deleteJson($this->link($server) . "/users/$subuser->uuid")->assertNoContent();
 
         // Try the same test, but this time with a UUID that if cast to an int (shouldn't) line up with
         // anything in the database.
@@ -62,6 +63,6 @@ class DeleteSubuserTest extends ClientApiIntegrationTestCase
 
         $mock->expects('setServer->revokeUserJTI')->with($subuser->id)->andReturnUndefined();
 
-        $this->actingAs($user)->deleteJson($this->link($server) . "/users/{$subuser->uuid}")->assertNoContent();
+        $this->actingAs($user)->deleteJson($this->link($server) . "/users/$subuser->uuid")->assertNoContent();
     }
 }

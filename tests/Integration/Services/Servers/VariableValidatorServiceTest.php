@@ -11,20 +11,32 @@ use Pterodactyl\Services\Servers\VariableValidatorService;
 
 class VariableValidatorServiceTest extends IntegrationTestCase
 {
+    protected Egg $egg;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        /* @noinspection PhpFieldAssignmentTypeMismatchInspection */
+        $this->egg = Egg::query()
+            ->where('author', 'support@pterodactyl.io')
+            ->where('name', 'Bungeecord')
+            ->firstOrFail();
+    }
+
     /**
-     * Test that enviornment variables for a server are validated as expected.
+     * Test that environment variables for a server are validated as expected.
      */
     public function testEnvironmentVariablesCanBeValidated()
     {
-        /** @noinspection PhpParamsInspection */
-        $egg = $this->cloneEggAndVariables(Egg::query()->findOrFail(1));
+        $egg = $this->cloneEggAndVariables($this->egg);
 
         try {
             $this->getService()->handle($egg->id, [
                 'BUNGEE_VERSION' => '1.2.3',
             ]);
 
-            $this->assertTrue(false, 'This statement should not be reached.');
+            $this->fail('This statement should not be reached.');
         } catch (ValidationException $exception) {
             $errors = $exception->errors();
 
@@ -54,8 +66,7 @@ class VariableValidatorServiceTest extends IntegrationTestCase
      */
     public function testNormalUserCannotValidateNonUserEditableVariables()
     {
-        /** @noinspection PhpParamsInspection */
-        $egg = $this->cloneEggAndVariables(Egg::query()->findOrFail(1));
+        $egg = $this->cloneEggAndVariables($this->egg);
         $egg->variables()->first()->update([
             'user_editable' => false,
         ]);
@@ -74,8 +85,7 @@ class VariableValidatorServiceTest extends IntegrationTestCase
 
     public function testEnvironmentVariablesCanBeUpdatedAsAdmin()
     {
-        /** @noinspection PhpParamsInspection */
-        $egg = $this->cloneEggAndVariables(Egg::query()->findOrFail(1));
+        $egg = $this->cloneEggAndVariables($this->egg);
         $egg->variables()->first()->update([
             'user_editable' => false,
         ]);
@@ -86,7 +96,7 @@ class VariableValidatorServiceTest extends IntegrationTestCase
                 'SERVER_JARFILE' => 'server.jar',
             ]);
 
-            $this->assertTrue(false, 'This statement should not be reached.');
+            $this->fail('This statement should not be reached.');
         } catch (ValidationException $exception) {
             $this->assertCount(1, $exception->errors());
             $this->assertArrayHasKey('environment.BUNGEE_VERSION', $exception->errors());
@@ -107,8 +117,7 @@ class VariableValidatorServiceTest extends IntegrationTestCase
 
     public function testNullableEnvironmentVariablesCanBeUsedCorrectly()
     {
-        /** @noinspection PhpParamsInspection */
-        $egg = $this->cloneEggAndVariables(Egg::query()->findOrFail(1));
+        $egg = $this->cloneEggAndVariables($this->egg);
         $egg->variables()->where('env_variable', '!=', 'BUNGEE_VERSION')->delete();
 
         $egg->variables()->update(['rules' => 'nullable|string']);
@@ -126,10 +135,7 @@ class VariableValidatorServiceTest extends IntegrationTestCase
         $this->assertSame('', $response->get(0)->value);
     }
 
-    /**
-     * @return \Pterodactyl\Services\Servers\VariableValidatorService
-     */
-    private function getService()
+    private function getService(): VariableValidatorService
     {
         return $this->app->make(VariableValidatorService::class);
     }

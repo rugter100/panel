@@ -55,7 +55,7 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
                     'first_name' => $this->getApiUser()->name_first,
                     'last_name' => $this->getApiUser()->name_last,
                     'language' => $this->getApiUser()->language,
-                    'root_admin' => (bool) $this->getApiUser()->root_admin,
+                    'root_admin' => $this->getApiUser()->root_admin,
                     '2fa' => (bool) $this->getApiUser()->totp_enabled,
                     'created_at' => $this->formatTimestamp($this->getApiUser()->created_at),
                     'updated_at' => $this->formatTimestamp($this->getApiUser()->updated_at),
@@ -198,18 +198,6 @@ class UserControllerTest extends ApplicationApiIntegrationTestCase
         $this->createNewDefaultApiKey($this->getApiUser(), ['r_users' => 0]);
 
         $response = $this->getJson('/api/application/users/' . $user->id);
-        $this->assertAccessDeniedJson($response);
-    }
-
-    /**
-     * Test that a users's existence is not exposed unless an API key has permission
-     * to access the resource.
-     */
-    public function testResourceIsNotExposedWithoutPermissions()
-    {
-        $this->createNewDefaultApiKey($this->getApiUser(), ['r_users' => 0]);
-
-        $response = $this->getJson('/api/application/users/nil');
         $this->assertAccessDeniedJson($response);
     }
 

@@ -4,22 +4,16 @@ namespace Pterodactyl\Http\Requests\Api\Application\Servers;
 
 use Pterodactyl\Models\Server;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Pterodactyl\Services\Acl\Api\AdminAcl;
-use Illuminate\Contracts\Validation\Validator;
 use Pterodactyl\Models\Objects\DeploymentObject;
 use Pterodactyl\Http\Requests\Api\Application\ApplicationApiRequest;
 
 class StoreServerRequest extends ApplicationApiRequest
 {
-    /**
-     * @var string
-     */
-    protected $resource = AdminAcl::RESOURCE_SERVERS;
+    protected ?string $resource = AdminAcl::RESOURCE_SERVERS;
 
-    /**
-     * @var int
-     */
-    protected $permission = AdminAcl::WRITE;
+    protected int $permission = AdminAcl::WRITE;
 
     /**
      * Rules to be applied to this request.
@@ -73,10 +67,8 @@ class StoreServerRequest extends ApplicationApiRequest
 
     /**
      * Normalize the data into a format that can be consumed by the service.
-     *
-     * @return array
      */
-    public function validated()
+    public function validated($key = null, $default = null): array
     {
         $data = parent::validated();
 
@@ -102,15 +94,16 @@ class StoreServerRequest extends ApplicationApiRequest
             'database_limit' => array_get($data, 'feature_limits.databases'),
             'allocation_limit' => array_get($data, 'feature_limits.allocations'),
             'backup_limit' => array_get($data, 'feature_limits.backups'),
+            'oom_disabled' => array_get($data, 'oom_disabled'),
         ];
     }
 
     /*
      * Run validation after the rules above have been applied.
      *
-     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @param \Illuminate\Validation\Validator $validator
      */
-    public function withValidator(Validator $validator)
+    public function withValidator(Validator $validator): void
     {
         $validator->sometimes('allocation.default', [
             'required', 'integer', 'bail',
@@ -118,7 +111,7 @@ class StoreServerRequest extends ApplicationApiRequest
                 $query->whereNull('server_id');
             }),
         ], function ($input) {
-            return !($input->deploy);
+            return !$input->deploy;
         });
 
         $validator->sometimes('allocation.additional.*', [
@@ -127,7 +120,7 @@ class StoreServerRequest extends ApplicationApiRequest
                 $query->whereNull('server_id');
             }),
         ], function ($input) {
-            return !($input->deploy);
+            return !$input->deploy;
         });
 
         $validator->sometimes('deploy.locations', 'present', function ($input) {
@@ -141,10 +134,8 @@ class StoreServerRequest extends ApplicationApiRequest
 
     /**
      * Return a deployment object that can be passed to the server creation service.
-     *
-     * @return \Pterodactyl\Models\Objects\DeploymentObject|null
      */
-    public function getDeploymentObject()
+    public function getDeploymentObject(): ?DeploymentObject
     {
         if (is_null($this->input('deploy'))) {
             return null;

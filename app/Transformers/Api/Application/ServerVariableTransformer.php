@@ -2,17 +2,17 @@
 
 namespace Pterodactyl\Transformers\Api\Application;
 
+use League\Fractal\Resource\Item;
 use Pterodactyl\Models\EggVariable;
+use League\Fractal\Resource\NullResource;
 use Pterodactyl\Services\Acl\Api\AdminAcl;
 
 class ServerVariableTransformer extends BaseTransformer
 {
     /**
      * List of resources that can be included.
-     *
-     * @var array
      */
-    protected $availableIncludes = ['parent'];
+    protected array $availableIncludes = ['parent'];
 
     /**
      * Return the resource name for the JSONAPI output.
@@ -24,10 +24,8 @@ class ServerVariableTransformer extends BaseTransformer
 
     /**
      * Return a generic transformed server variable array.
-     *
-     * @return array
      */
-    public function transform(EggVariable $variable)
+    public function transform(EggVariable $variable): array
     {
         return $variable->toArray();
     }
@@ -35,11 +33,9 @@ class ServerVariableTransformer extends BaseTransformer
     /**
      * Return the parent service variable data.
      *
-     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeParent(EggVariable $variable)
+    public function includeParent(EggVariable $variable): Item|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_EGGS)) {
             return $this->null();

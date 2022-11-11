@@ -23,23 +23,11 @@ class RunTaskJob extends Job implements ShouldQueue
     use SerializesModels;
 
     /**
-     * @var \Pterodactyl\Models\Task
-     */
-    public $task;
-
-    /**
-     * @var bool
-     */
-    public $manualRun;
-
-    /**
      * RunTaskJob constructor.
      */
-    public function __construct(Task $task, $manualRun = false)
+    public function __construct(public Task $task, public bool $manualRun = false)
     {
-        $this->queue = config('pterodactyl.queues.standard');
-        $this->task = $task;
-        $this->manualRun = $manualRun;
+        $this->queue = 'standard';
     }
 
     /**
@@ -61,6 +49,16 @@ class RunTaskJob extends Job implements ShouldQueue
         }
 
         $server = $this->task->server;
+        // If we made it to this point and the server status is not null it means the
+        // server was likely suspended or marked as reinstalling after the schedule
+        // was queued up. Just end the task right now — this should be a very rare
+        // condition.
+        if (!is_null($server->status)) {
+            $this->failed();
+
+            return;
+        }
+
         // Perform the provided task against the daemon.
         try {
             switch ($this->task->action) {
@@ -104,7 +102,8 @@ class RunTaskJob extends Job implements ShouldQueue
     {
         /** @var \Pterodactyl\Models\Task|null $nextTask */
         $nextTask = Task::query()->where('schedule_id', $this->task->schedule_id)
-            ->where('sequence_id', $this->task->sequence_id + 1)
+            ->orderBy('sequence_id', 'asc')
+            ->where('sequence_id', '>', $this->task->sequence_id)
             ->first();
 
         if (is_null($nextTask)) {

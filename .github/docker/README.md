@@ -12,7 +12,7 @@ You can provide additional settings using a custom `.env` file or by setting the
 
 ## Setup
 
-Start the docker container and the required dependencies (either provide existing ones or start containers as well, see the [docker-compose.yml](docker-compose.yml) file as an example).
+Start the docker container and the required dependencies (either provide existing ones or start containers as well, see the [docker-compose.yml](https://github.com/pterodactyl/panel/blob/develop/docker-compose.example.yml) file as an example.
 
 After the startup is complete you'll need to create a user.
 If you are running the docker container without docker-compose, use:
@@ -27,13 +27,13 @@ docker-compose exec panel php artisan p:user:make
 ## Environment Variables
 There are multiple environment variables to configure the panel when not providing your own `.env` file, see the following table for details on each available option.
 
-Note: If your `APP_URL` starts with `https://` you need to provide an `LETSENCRYPT_EMAIL` as well so Certificates can be generated.
+Note: If your `APP_URL` starts with `https://` you need to provide an `LE_EMAIL` as well so Certificates can be generated.
 
 | Variable            | Description                                                                    | Required |
 | ------------------- | ------------------------------------------------------------------------------ | -------- |
 | `APP_URL`           | The URL the panel will be reachable with (including protocol)                  | yes      |
 | `APP_TIMEZONE`      | The timezone to use for the panel                                              | yes      |
-| `LETSENCRYPT_EMAIL` | The email used for letsencrypt certificate generation                          | yes      |
+| `LE_EMAIL`          | The email used for letsencrypt certificate generation                          | yes      |
 | `DB_HOST`           | The host of the mysql instance                                                 | yes      |
 | `DB_PORT`           | The port of the mysql instance                                                 | yes      |
 | `DB_DATABASE`       | The name of the mysql database                                                 | yes      |

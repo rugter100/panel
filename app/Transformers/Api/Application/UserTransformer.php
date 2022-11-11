@@ -3,16 +3,16 @@
 namespace Pterodactyl\Transformers\Api\Application;
 
 use Pterodactyl\Models\User;
+use League\Fractal\Resource\Collection;
+use League\Fractal\Resource\NullResource;
 use Pterodactyl\Services\Acl\Api\AdminAcl;
 
 class UserTransformer extends BaseTransformer
 {
     /**
      * List of resources that can be included.
-     *
-     * @var array
      */
-    protected $availableIncludes = ['servers'];
+    protected array $availableIncludes = ['servers'];
 
     /**
      * Return the resource name for the JSONAPI output.
@@ -46,11 +46,9 @@ class UserTransformer extends BaseTransformer
     /**
      * Return the servers associated with this user.
      *
-     * @return \League\Fractal\Resource\Collection|\League\Fractal\Resource\NullResource
-     *
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
-    public function includeServers(User $user)
+    public function includeServers(User $user): Collection|NullResource
     {
         if (!$this->authorize(AdminAcl::RESOURCE_SERVERS)) {
             return $this->null();

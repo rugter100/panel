@@ -13,15 +13,9 @@ use Pterodactyl\Transformers\Api\Application\BaseTransformer;
 
 abstract class ApplicationApiController extends Controller
 {
-    /**
-     * @var \Illuminate\Http\Request
-     */
-    protected $request;
+    protected Request $request;
 
-    /**
-     * @var \Pterodactyl\Extensions\Spatie\Fractalistic\Fractal
-     */
-    protected $fractal;
+    protected Fractal $fractal;
 
     /**
      * ApplicationApiController constructor.
@@ -30,7 +24,7 @@ abstract class ApplicationApiController extends Controller
     {
         Container::getInstance()->call([$this, 'loadDependencies']);
 
-        // Parse all of the includes to use on this request.
+        // Parse all the includes to use on this request.
         $input = $this->request->input('include', []);
         $input = is_array($input) ? $input : explode(',', $input);
 
@@ -55,21 +49,23 @@ abstract class ApplicationApiController extends Controller
     /**
      * Return an instance of an application transformer.
      *
-     * @return \Pterodactyl\Transformers\Api\Application\BaseTransformer
+     * @template T of \Pterodactyl\Transformers\Api\Application\BaseTransformer
+     *
+     * @param class-string<T> $abstract
+     *
+     * @return T
+     *
+     * @noinspection PhpDocSignatureInspection
      */
     public function getTransformer(string $abstract)
     {
-        /** @var \Pterodactyl\Transformers\Api\Application\BaseTransformer $transformer */
-        $transformer = Container::getInstance()->make($abstract);
-        $transformer->setKey($this->request->attributes->get('api_key'));
+        Assert::subclassOf($abstract, BaseTransformer::class);
 
-        Assert::isInstanceOf($transformer, BaseTransformer::class);
-
-        return $transformer;
+        return $abstract::fromRequest($this->request);
     }
 
     /**
-     * Return a HTTP/204 response for the API.
+     * Return an HTTP/204 response for the API.
      */
     protected function returnNoContent(): Response
     {

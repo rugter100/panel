@@ -3,7 +3,6 @@
 namespace Pterodactyl\Tests\Integration\Services\Servers;
 
 use Exception;
-use Pterodactyl\Models\Egg;
 use Pterodactyl\Models\Nest;
 use Pterodactyl\Models\User;
 use Pterodactyl\Models\Server;
@@ -23,8 +22,7 @@ class StartupModificationServiceTest extends IntegrationTestCase
      */
     public function testNonAdminCanModifyServerVariables()
     {
-        // Theoretically lines up with the Bungeecord Minecraft egg.
-        $server = $this->createServerModel(['egg_id' => 1]);
+        $server = $this->createServerModel();
 
         try {
             $this->app->make(StartupModificationService::class)->handle($server, [
@@ -35,7 +33,7 @@ class StartupModificationServiceTest extends IntegrationTestCase
                 ],
             ]);
 
-            $this->assertTrue(false, 'This assertion should not be called.');
+            $this->fail('This assertion should not be called.');
         } catch (Exception $exception) {
             $this->assertInstanceOf(ValidationException::class, $exception);
 
@@ -163,10 +161,7 @@ class StartupModificationServiceTest extends IntegrationTestCase
             ->handle($server, ['egg_id' => 123456789]);
     }
 
-    /**
-     * @return \Pterodactyl\Services\Servers\StartupModificationService
-     */
-    private function getService()
+    private function getService(): StartupModificationService
     {
         return $this->app->make(StartupModificationService::class);
     }
